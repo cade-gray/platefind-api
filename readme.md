@@ -32,7 +32,7 @@ for deployment to a VPS.
   "design_name": "Standard White Plate",
   "design_description": "White background with county code, 'Sweet Home Alabama' text at bottom",
   "design_reasoning": "References the iconic Lynyrd Skynyrd song to promote state tourism...",
-  "svg_code": "<svg viewBox=\"0 0 600 300\">...</svg>"
+  "svg_code": "<svg viewBox=\"0 0 300 150\">...</svg>"
 }
 ```
 
@@ -109,6 +109,42 @@ psql -U gorm -d platefind_db -f migrations/001_add_svg_code_to_plates.sql
 
 - `001_add_svg_code_to_plates.sql` — adds the nullable `svg_code TEXT` column
   that stores each plate's SVG markup.
+- `002_plate_svgs.sql` — fills `svg_code` for all 51 plates. Generated; see
+  Plate artwork below.
+
+## Plate artwork
+
+`scripts/build_plate_svgs.py` is the source of truth for every plate design.
+Running it writes three things and nothing else:
+
+```sh
+python3 scripts/build_plate_svgs.py
+```
+
+| Output | What it is |
+| --- | --- |
+| `plate-svgs/<state>.svg` | one file per plate, for eyeballing a single design |
+| `plate-svgs/preview.html` | all 51 on one page |
+| `migrations/002_plate_svgs.sql` | the `UPDATE` statements that load them |
+
+Edit the generator, never the SQL or the SVG files — they are overwritten on
+every run. The script fails if the set of designs drifts from the states in
+`us-license-plates-imp.csv`.
+
+Load the artwork (safe to re-run; it only overwrites `svg_code`):
+
+```sh
+psql -U gorm -d platefind_db -f migrations/002_plate_svgs.sql
+```
+
+It matches on `state` and finishes by listing any plate still missing artwork —
+an empty result means all 51 landed.
+
+Each design is a 300x150 viewBox, the true 2:1 proportion of a 12x6in plate,
+with `width`/`height` at 100% so it fills whatever box the UI gives it. There
+are no external references, so the markup can be inlined directly. Gradient and
+clip `id`s are prefixed with the state slug because the board renders all 51
+into one document, and duplicate ids would cross-wire the fills.
 
 ## Deployment
 
@@ -193,6 +229,8 @@ Verify with `docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' <container>`
 main.go                 # Entry point, DB connection, route registration
 routes/plates.go        # Plate model and /plates handlers
 migrations/             # Incremental SQL migrations
+scripts/build_plate_svgs.py # Draws every plate; emits the SVGs and 002_*.sql
+plate-svgs/             # Generated artwork, one SVG per plate + preview.html
 CREATE_SQLS.sql         # Full schema + role setup
 us-license-plates-imp.csv  # Seed data
 Dockerfile              # Multi-stage build
