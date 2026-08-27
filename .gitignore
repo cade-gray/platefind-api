@@ -1,0 +1,31 @@
+# Docker files
+compose.dev.yaml
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Build and dependency directories
+/bin/
+/build/
+/dist/
+/vendor/
+
+# IDE/editor files
+*.swp
+*.swo
+*.idea/
+*.vscode/
+.DS_Store
+
+
+# Logs
+*.log
+
+# Environment files
+.env
