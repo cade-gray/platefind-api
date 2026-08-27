@@ -4,7 +4,13 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [closed]
+    branches: [main]
+
+# One run per ref. A superseded pull request build is worth cancelling; a deploy
+# that is already talking to the VPS is not.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   REGISTRY: ghcr.io
@@ -46,11 +52,15 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Scoped per ref: two runs exporting to the same scope at once is what
+          # produced "failed to reserve cache". Branches still warm from main.
+          cache-from: |
+            type=gha,scope=${{ github.ref_name }}
+            type=gha,scope=main
+          cache-to: type=gha,scope=${{ github.ref_name }},mode=max
 
   deploy:
     needs: build-and-push
@@ -84,9 +94,7 @@ jobs:
             # Start the new container
             docker compose -f compose.dev.yaml up -d
 
-            # Make sure Docker itself comes up on boot, and that the container
-            # is restarted by the daemon after a host reboot or a crash.
-            sudo systemctl enable docker || true
+            # Have the daemon restart the container after a crash or reboot.
             docker update --restart unless-stopped $(docker compose -f compose.dev.yaml ps -q) || true
 
             # Clean up old images

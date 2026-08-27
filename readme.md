@@ -152,11 +152,19 @@ into one document, and duplicate ids would cross-wire the fills.
 
 `.github/workflows/deploy.yml` builds a multi-platform image (amd64 + arm64),
 pushes it to GitHub Container Registry, and deploys it over SSH on every push to
-`main`. Pull requests build only.
+`main`. Pull requests build to prove the image still compiles and stop there —
+they never push, so they cannot move the `:latest` tag the VPS pulls.
 
 The deploy step pulls the latest image, recreates the container from the compose
 file on the VPS (`/srv/platefind-api/compose.dev.yaml`), and ensures the
 container is set to restart automatically.
+
+> **`compose.dev.yaml` has to name the published image.** It is gitignored and
+> lives only on the VPS, so nothing in CI can check it. Its `server` service must
+> read `image: ghcr.io/cade-gray/platefind-api:latest` — no `build:` block. If it
+> names anything else, every deploy still reports success: the workflow pulls the
+> new image, then compose recreates the container from whatever the file actually
+> points at, and production silently keeps running old code.
 
 #### Repository secrets
 
@@ -215,7 +223,8 @@ Two things have to be true for the API to come back after the host restarts:
    docker update --restart unless-stopped <container>
    ```
 
-2. **The Docker daemon starts on boot:**
+2. **The Docker daemon starts on boot.** One-time host setup, done by hand —
+   the deploy user cannot run `systemctl` as root, so CI cannot do this:
 
    ```sh
    sudo systemctl enable docker
