@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"go-docker-demo/routes"
 	"net/http"
 	"os"
+
+	"platefind-api/routes"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
@@ -29,34 +30,10 @@ func main() {
 		panic("failed to connect database")
 	}
 
-	routes.RegisterJokeRoutes(router)
 	routes.RegisterPlateRoutes(router, db)
-	routes.RegisterTripRoutes(router)
 
-	router.GET("/html", func(c *gin.Context) {
-		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`<h1>Hello, Gin! <span style="color:#55D7E5">ʕ◔ϖ◔ʔ</span></h1>`))
-	})
-	router.GET("/kiba", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Hello, Kiba!",
-		})
-	})
-	router.GET("/cicd", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Hello, CI/CD!",
-		})
-	})
-	router.POST("/ping", func(c *gin.Context) {
-		var req struct {
-			Message string `json:"message"`
-		}
-		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Pong " + req.Message,
-		})
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 	router.Run(":4269")
 }

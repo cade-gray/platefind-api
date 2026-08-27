@@ -8,12 +8,13 @@ import (
 )
 
 type Plate struct {
-	ID                int    `json:"id" gorm:"primaryKey"`
-	State             string `json:"state" gorm:"column:state"`
-	Country           string `json:"country" gorm:"column:country"`
-	DesignName        string `json:"design_name" gorm:"column:design_name"`
-	DesignDescription string `json:"design_description" gorm:"column:design_description"`
-	DesignReasoning   string `json:"design_reasoning" gorm:"column:design_reasoning"`
+	ID                int     `json:"id" gorm:"primaryKey"`
+	State             string  `json:"state" gorm:"column:state"`
+	Country           string  `json:"country" gorm:"column:country"`
+	DesignName        string  `json:"design_name" gorm:"column:design_name"`
+	DesignDescription string  `json:"design_description" gorm:"column:design_description"`
+	DesignReasoning   string  `json:"design_reasoning" gorm:"column:design_reasoning"`
+	SvgCode           *string `json:"svg_code" gorm:"column:svg_code"`
 }
 
 func RegisterPlateRoutes(router *gin.Engine, db *gorm.DB) {
